@@ -9,12 +9,13 @@ Repositório criado para armazenar conteúdos relacionados ao componente curricu
   - [💬 Trabalho principal](#-trabalho-principal)
     - [📦 Entregas](#-entregas)
     - [📅 Datas](#-datas)
+  - [👥 Dupla](#-dupla)
 
 ## 💬 Trabalho principal ##
 
 O trabalho principal consiste em implementações feitas em etapas de um chat no protocolo MQTT.
 
-- [Descrição](trabalho/descricao.pdf)
+- [Descrição](descricao.pdf)
 
 ### 📦 Entregas ###
 
