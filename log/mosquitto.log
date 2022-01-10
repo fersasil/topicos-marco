@@ -1,0 +1,61 @@
+1639010608: mosquitto version 2.0.14 starting
+1639010608: Config loaded from /mosquitto/config/mosquitto.conf.
+1639010608: Starting in local only mode. Connections will only be possible from clients running on this machine.
+1639010608: Create a configuration file which defines a listener to allow remote access.
+1639010608: For more details see https://mosquitto.org/documentation/authentication-methods/
+1639010608: Opening ipv4 listen socket on port 1883.
+1639010608: Opening ipv6 listen socket on port 1883.
+1639010608: Error: Address not available
+1639010608: mosquitto version 2.0.14 running
+1639010822: mosquitto version 2.0.14 terminating
+1639010822: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1639010848: mosquitto version 2.0.14 starting
+1639010848: Config loaded from /mosquitto/config/mosquitto.conf.
+1639010848: Starting in local only mode. Connections will only be possible from clients running on this machine.
+1639010848: Create a configuration file which defines a listener to allow remote access.
+1639010848: For more details see https://mosquitto.org/documentation/authentication-methods/
+1639010848: Opening ipv4 listen socket on port 1883.
+1639010848: Opening ipv6 listen socket on port 1883.
+1639010848: Error: Address not available
+1639010848: mosquitto version 2.0.14 running
+1639011135: New connection from 127.0.0.1:59184 on port 1883.
+1639011135: New client connected from 127.0.0.1:59184 as auto-396E7B11-E07C-CDED-B9DC-AFF5A5AA32D8 (p2, c1, k60).
+1639011156: New connection from 127.0.0.1:59186 on port 1883.
+1639011156: New client connected from 127.0.0.1:59186 as auto-31197D78-C88B-E5C7-7219-5FFCB3DC8C17 (p2, c1, k60).
+1639011156: Client auto-31197D78-C88B-E5C7-7219-5FFCB3DC8C17 disconnected.
+1639011164: Client auto-396E7B11-E07C-CDED-B9DC-AFF5A5AA32D8 disconnected.
+1639011180: mosquitto version 2.0.14 terminating
+1639011180: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1639011186: mosquitto version 2.0.14 starting
+1639011186: Config loaded from /mosquitto/config/mosquitto.conf.
+1639011186: Starting in local only mode. Connections will only be possible from clients running on this machine.
+1639011186: Create a configuration file which defines a listener to allow remote access.
+1639011186: For more details see https://mosquitto.org/documentation/authentication-methods/
+1639011186: Opening ipv4 listen socket on port 1883.
+1639011186: Opening ipv6 listen socket on port 1883.
+1639011186: Error: Address not available
+1639011186: mosquitto version 2.0.14 running
+1639011290: mosquitto version 2.0.14 terminating
+1639011290: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1639011293: mosquitto version 2.0.14 starting
+1639011293: Config loaded from /mosquitto/config/mosquitto.conf.
+1639011293: Starting in local only mode. Connections will only be possible from clients running on this machine.
+1639011293: Create a configuration file which defines a listener to allow remote access.
+1639011293: For more details see https://mosquitto.org/documentation/authentication-methods/
+1639011293: Opening ipv4 listen socket on port 1883.
+1639011293: Opening ipv6 listen socket on port 1883.
+1639011293: Error: Address not available
+1639011293: mosquitto version 2.0.14 running
+1639011471: mosquitto version 2.0.14 terminating
+1639011471: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1639011535: mosquitto version 2.0.14 starting
+1639011535: Config loaded from /mosquitto/config/mosquitto.conf.
+1639011535: Starting in local only mode. Connections will only be possible from clients running on this machine.
+1639011535: Create a configuration file which defines a listener to allow remote access.
+1639011535: For more details see https://mosquitto.org/documentation/authentication-methods/
+1639011535: Opening ipv4 listen socket on port 1883.
+1639011535: Opening ipv6 listen socket on port 1883.
+1639011535: Error: Address not available
+1639011535: mosquitto version 2.0.14 running
+1639011558: mosquitto version 2.0.14 terminating
+1639011558: Saving in-memory database to /mosquitto/data//mosquitto.db.
