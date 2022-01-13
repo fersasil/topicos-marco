@@ -1,0 +1,28 @@
+{
+  "name": "mqtt-go-uffs",
+  "version": "1.0.0",
+  "description": "This is a graduation task",
+  "main": "src/main.go",
+  "dependencies": {
+    "nodemon": "^2.0.15"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "dev": "nodemon --exec go run src/main.go --signal SIGTERM",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fersasil/topicos-marco.git"
+  },
+  "keywords": [
+    "go",
+    "mqqt"
+  ],
+  "author": "fersasil; ruanpato",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fersasil/topicos-marco/issues"
+  },
+  "homepage": "https://github.com/fersasil/topicos-marco#readme"
+}
