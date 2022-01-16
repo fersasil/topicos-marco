@@ -27,15 +27,15 @@ id, status e nomeControl
 --------
 
 --------
-[ ] Enviar solicitação para conversar com outro usuário
+[ x ] Enviar solicitação para conversar com outro usuário
 
 (isso é enviar uma solicitação ao control do usuario com uma mensagem de "iniciar chat")
 
-[] Receber mensagens de solicitação de novas conversar no seu topico de controle e aceitar ou não
+[ x ] Receber mensagens de solicitação de novas conversar no seu topico de controle e aceitar ou não
   se aceitar mandar mensagem para o topico do solicitante
   se aceitar se inscrever no topico da novo x_y_timestamp
 
-[ ] Receber mensagens de "aceite de conversação" e se inscrever no grupo
+[ x ] Receber mensagens de "aceite de conversação" e se inscrever no topico
 
 -------------
 
