@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 const CONTROL_MESSAGE_REGISTER_DEVICE = 0
-const CONTROL_MESSAGE_REQUEST_CHAT = 1
-const CONTROL_MESSAGE_ACCEPT_CHAT = 2
+const CONTROL_MESSAGE_SHARE_USERS = 3
+
+const CONTROL_USER_MESSAGE_REQUEST_CHAT = 1
+const CONTROL_USER_MESSAGE_ACCEPT_CHAT = 2
 const CONTROL_TOPIC = "topic/control"
 
 type User struct {
@@ -24,6 +27,7 @@ type ControlMessage struct {
 	Status bool   `json:"status"`
 	Type   int    `json:"type"`
 	Topic  string `json:"topic"`
+	Users  []User `json:"users"`
 }
 
 type Chat struct {
@@ -38,9 +42,9 @@ type MessageChat struct {
 	SenderId string `json:"senderId"`
 }
 
-var usersList = make([]User, 100)
-var usersChatList = make([]Chat, 100)
-var requestMessageList = make([]User, 100)
+var usersList = make([]User, 0)
+var usersChatList = make([]Chat, 0)
+var requestMessageList = make([]User, 0)
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("Connected")
@@ -64,10 +68,12 @@ func createNewClient(userId *string) *mqtt.ClientOptions {
 	return opts
 }
 
+// go run ./src/main.go -s
 // go run ./src/main.go -id=1
 
 func main() {
 	userId := flag.String("id", "-1", "user id")
+	createPersistentMessage := flag.Bool("s", false, "Iniciar aplicação")
 	flag.Parse()
 
 	opts := createNewClient(userId)
@@ -77,23 +83,53 @@ func main() {
 		panic(token.Error())
 	}
 
-	userControlSub(client, userId)
-
-	controlTopicSub(client)
-
-	message := ControlMessage{
-		Id:     *userId,
-		Status: true,
-		Type:   CONTROL_MESSAGE_REGISTER_DEVICE,
+	if *createPersistentMessage {
+		sendCurrentUsersListToControl(client)
+		fmt.Println("Configurações iniciadas com sucesso")
+		client.Disconnect(250)
+		os.Exit(0)
 	}
 
-	controlTopicPub(client, &message, false)
+	// register user on vector. if it already exists change it status to online
+
+	userControlSub(client, userId)
+
+	controlTopicSub(client, *userId)
+
+	go func() {
+		for {
+			time.Sleep(8 * time.Second)
+			fmt.Printf("%+v\n", usersList)
+		}
+	}()
 
 	for {
 	}
 
 	// use it to break
 	// client.Disconnect(250)
+}
+
+func registerUserToList(client mqtt.Client, userId string) {
+	var user *User = nil
+
+	for _, currentUser := range usersList {
+		if currentUser.Id == userId {
+			user = &currentUser
+			break
+		}
+	}
+
+	if user != nil && user.Status {
+		fmt.Println("User is already nline")
+		os.Exit(3)
+	}
+
+	if user != nil {
+		user.Status = true
+	} else {
+		usersList = append(usersList, User{Id: userId, Status: true})
+	}
 }
 
 func handleChatMessages(client mqtt.Client, msg mqtt.Message) {
@@ -140,7 +176,7 @@ func acceptRequestToUserChat(client mqtt.Client, userId string, targetId string)
 	payload := stringify(&ControlMessage{
 		Topic: topic,
 		Id:    userId,
-		Type:  CONTROL_MESSAGE_ACCEPT_CHAT,
+		Type:  CONTROL_USER_MESSAGE_ACCEPT_CHAT,
 	})
 
 	client.Publish(topicControlRequester, 0, false, payload)
@@ -158,7 +194,7 @@ func sendRequestToUser(client mqtt.Client, userId string, targetId string) {
 
 	message := &ControlMessage{
 		Id:   userId,
-		Type: CONTROL_MESSAGE_REQUEST_CHAT,
+		Type: CONTROL_USER_MESSAGE_REQUEST_CHAT,
 	}
 
 	payload := stringify(message)
@@ -176,12 +212,15 @@ func createTopicString(name string) string {
 	return "topic/" + name
 }
 
-func controlTopicSub(client mqtt.Client) {
+func controlTopicSub(client mqtt.Client, userId string) {
+	firstSharedUsers := true
+
 	var messagePubHandlerControl mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		payload := msg.Payload()
 		var message ControlMessage
 
 		json.Unmarshal([]byte(payload), &message)
+		fmt.Printf("%+v\n", message)
 
 		switch message.Type {
 		case CONTROL_MESSAGE_REGISTER_DEVICE:
@@ -195,13 +234,40 @@ func controlTopicSub(client mqtt.Client) {
 				fmt.Println("Usuário adicionado- " + user.Id)
 				break
 			}
+		case CONTROL_MESSAGE_SHARE_USERS:
+			{
+				fmt.Println("lksklqs")
+				usersList = message.Users
+
+				if firstSharedUsers {
+					registerUserToList(client, userId)
+
+					// inform others you are online
+					sendCurrentUsersListToControl(client)
+
+					firstSharedUsers = false
+				}
+
+				break
+			}
 		}
 	}
 
 	// Descobrir pra que serve o 1
-	token := client.Subscribe(CONTROL_TOPIC, 1, messagePubHandlerControl)
+	token := client.Subscribe(CONTROL_TOPIC, 0, messagePubHandlerControl)
 	token.Wait()
 	fmt.Printf("Subscribed to topic: %s", CONTROL_TOPIC)
+}
+
+func sendCurrentUsersListToControl(client mqtt.Client) {
+	allUSers := &ControlMessage{
+		Type:  CONTROL_MESSAGE_SHARE_USERS,
+		Users: usersList,
+	}
+
+	fmt.Println(stringify(allUSers))
+
+	client.Publish(CONTROL_TOPIC, 1, true, stringify(allUSers))
 }
 
 func controlTopicPub(client mqtt.Client, message *ControlMessage, retain bool) {
@@ -225,11 +291,11 @@ func userControlSub(client mqtt.Client, user *string) {
 		var message ControlMessage
 
 		json.Unmarshal([]byte(payload), &message)
-
+		fmt.Println(payload)
 		// mudar isso de control pra control account
 
 		switch message.Type {
-		case CONTROL_MESSAGE_REQUEST_CHAT:
+		case CONTROL_USER_MESSAGE_REQUEST_CHAT:
 			{
 				// add message to REQUEST_MESSAGE_LIST;
 				requestMessageList = append(requestMessageList, User{
@@ -238,7 +304,7 @@ func userControlSub(client mqtt.Client, user *string) {
 
 				break
 			}
-		case CONTROL_MESSAGE_ACCEPT_CHAT:
+		case CONTROL_USER_MESSAGE_ACCEPT_CHAT:
 			{
 				usersChatList = append(usersChatList, Chat{
 					TargetId: message.Id,
