@@ -1,17 +1,17 @@
-[] - Criar os topico de controle = Usuários
+[ x ] - Criar os topico de controle = Usuários
 [] - Criar os topico de controle = Grupos
 
 ------
 
-[] - Receber do cli um id
+[ x ] - Receber do cli um id
 
-[] - criar um topico novo de controle a partir do id
+[ x ] - criar um topico novo de controle a partir do id
 ID_Control (caso exista se isncreve ao topico)
 
-[] - Mandar uma mensagem para o topico usuários mandando o 
+[ x ] - Mandar uma mensagem para o topico usuários mandando o 
 id, status e nomeControl
 
-[ ] - se inscrever no topico usuários
+[ x ] - se inscrever no topico usuários
 [ ] - se inscrever no topicos grupos
 
 ------

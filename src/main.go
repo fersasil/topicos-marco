@@ -4,148 +4,147 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
 
-	"github.com/twinj/uuid"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
+
+const CONTROL_MESSAGE_REGISTER_DEVICE = 0
+const CONTROL_TOPIC = "topic/control"
 
 type User struct {
 	Id     string `json:"id"`
-	Status string `json:"status"`
+	Status bool   `json:"status"`
 }
+
+type ControlMessage struct {
+	Id     string `json:"id"`
+	Status bool   `json:"status"`
+	Type   int    `json:"type"`
+}
+
+var usersList = make([]User, 100)
+
+var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	fmt.Println("Connected")
+}
+
+var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+	fmt.Printf("Connect lost: %v", err)
+}
+
+func createNewClient(userId *string) *mqtt.ClientOptions {
+	var broker = "localhost"
+	var port = 1883
+
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
+	opts.SetClientID(string(*userId))
+
+	opts.OnConnect = connectHandler
+	opts.OnConnectionLost = connectLostHandler
+
+	return opts
+}
+
+// go run ./src/main.go -id=1
 
 func main() {
-	userId := flag.String("userId", "-1", "id do usuário")
+	userId := flag.String("id", "-1", "user id")
 	flag.Parse()
 
-	jsonFile, _ := os.Open("users.json")
+	opts := createNewClient(userId)
 
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var result []User
-	json.Unmarshal([]byte(byteValue), &result)
-
-	fmt.Println(result)
-	fmt.Printf("%+v\n", result)
-
-	addNewToList := true
-
-	for _, value := range result {
-		if value.Id == *userId {
-			addNewToList = false
-			value.Status = "online"
-
-			file, _ := json.MarshalIndent(result, "", " ")
-
-			_ = ioutil.WriteFile("users.json", file, 0644)
-			break
-		}
+	client := mqtt.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
 	}
 
-	if addNewToList {
-		var idToCreate string
+	userControlSub(client, userId)
 
-		if *userId == "-1" {
-			idToCreate = uuid.NewV4().String()
-		} else {
-			idToCreate = *userId
-		}
+	controlTopicSub(client)
 
-		newUser := User{
-			Id: idToCreate,
-		}
-
-		result = append(result, newUser)
-		file, _ := json.MarshalIndent(result, "", " ")
-		_ = ioutil.WriteFile("users.json", file, 0644)
+	message := ControlMessage{
+		Id:     *userId,
+		Status: true,
+		Type:   CONTROL_MESSAGE_REGISTER_DEVICE,
 	}
+
+	controlTopicPub(client, &message, false)
 
 	for {
-		var input string
-
-		fmt.Println("1 - Listar Usuários")
-		fmt.Println("2 - Criar novo grupo")
-		fmt.Println("3 - Listar grupos")
-		fmt.Println("4 - Nova conversa")
-		fmt.Println("5 - Listagem do histórico de solicitação recebidas")
-		fmt.Println("6 - Listagem das confirmações de aceitação da solicitação de batepapo")
-
-		fmt.Scanln(&input)
-
-		switch input {
-		case "1":
-			fmt.Println("one")
-		case "2":
-			fmt.Println("two")
-		case "3":
-			fmt.Println("three")
-		default:
-			fmt.Println("Nennum")
-		}
-
-		fmt.Println(input)
 	}
+
+	// use it to break
+	// client.Disconnect(250)
 }
 
-// var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-// 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-// }
+func controlTopicSub(client mqtt.Client) {
+	var messagePubHandlerControl mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+		payload := msg.Payload()
+		var message ControlMessage
 
-// var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-// 	fmt.Println("Connected")
-// }
+		json.Unmarshal([]byte(payload), &message)
 
-// var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-// 	fmt.Printf("Connect lost: %v", err)
-// }
+		switch message.Type {
+		case CONTROL_MESSAGE_REGISTER_DEVICE:
+			{
+				user := &User{
+					Id:     message.Id,
+					Status: message.Status,
+				}
 
-// func createNewClient() *mqtt.ClientOptions {
-// 	var broker = "localhost"
-// 	var port = 1883
+				usersList = append(usersList, *user)
+				fmt.Println("Usuário adicionado- " + user.Id)
+				break
+			}
+		}
+	}
 
-// 	opts := mqtt.NewClientOptions()
-// 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-// 	opts.SetClientID("go_mqtt_client")
-// 	opts.SetUsername("emqx")
-// 	opts.SetPassword("public")
-// 	opts.SetDefaultPublishHandler(messagePubHandler)
+	// Descobrir pra que serve o 1
+	token := client.Subscribe(CONTROL_TOPIC, 1, messagePubHandlerControl)
+	token.Wait()
+	fmt.Printf("Subscribed to topic: %s", CONTROL_TOPIC)
+}
 
-// 	opts.OnConnect = connectHandler
-// 	opts.OnConnectionLost = connectLostHandler
+func controlTopicPub(client mqtt.Client, message *ControlMessage, retain bool) {
+	stringMessage := stringify(message)
 
-// 	return opts
-// }
+	client.Publish(CONTROL_TOPIC, 0, retain, stringMessage)
+}
 
-// func main() {
-// 	opts := createNewClient()
+func stringify(item interface{}) string {
+	b, err := json.Marshal(item)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-// 	client := mqtt.NewClient(opts)
-// 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-// 		panic(token.Error())
-// 	}
+	return string(b)
+}
 
-// 	sub(client)
-// 	publish(client)
+func userControlSub(client mqtt.Client, user *string) {
+	var userPubHandlerControl mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+		payload := msg.Payload()
+		var message ControlMessage
 
-// 	client.Disconnect(250)
-// }
+		json.Unmarshal([]byte(payload), &message)
 
-// func publish(client mqtt.Client) {
-// 	num := 10
-// 	for i := 0; i < num; i++ {
-// 		text := fmt.Sprintf("Message %d", i)
-// 		token := client.Publish("topic/test", 0, false, text)
-// 		token.Wait()
-// 		time.Sleep(time.Second)
-// 	}
-// }
+		// switch message.Type {
+		// case CONTROL_MESSAGE_REGISTER_DEVICE:
+		// 	{
+		// 		user := &User{
+		// 			Id:     message.Id,
+		// 			Status: message.Status,
+		// 		}
 
-// func sub(client mqtt.Client) {
-// 	topic := "topic/test"
-// 	token := client.Subscribe(topic, 1, nil)
-// 	token.Wait()
-// 	fmt.Printf("Subscribed to topic: %s", topic)
-// }
+		// 		usersList = append(usersList, *user)
+		// 		fmt.Println("Usuário adicionado- " + user.Id)
+		// 		break
+		// 	}
+		// }
+	}
+
+	topic := "topic/" + *user + "_control"
+
+	token := client.Subscribe(topic, 1, userPubHandlerControl)
+	token.Wait()
+}
