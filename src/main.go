@@ -16,12 +16,18 @@ const CONTROL_MESSAGE_SHARE_USERS = 3
 const CONTROL_USER_MESSAGE_REQUEST_CHAT = 1
 const CONTROL_USER_MESSAGE_ACCEPT_CHAT = 2
 const CONTROL_TOPIC = "topic/control"
+const QOS_NOT_PERSISTENT = 0
+const QOS_PERSISTENT_1 = 1
+
+const MESSAGE_PERSISTENT = true
+const MESSAGE_NOT_PERSISTENT = false
 
 type User struct {
 	Id     string `json:"id"`
 	Status bool   `json:"status"`
 }
 
+// CGANGE THIS NAME to userConrol
 type ControlMessage struct {
 	Id     string `json:"id"`
 	Status bool   `json:"status"`
@@ -29,6 +35,14 @@ type ControlMessage struct {
 	Topic  string `json:"topic"`
 	Users  []User `json:"users"`
 }
+
+// // CGANGE THIS NAME to userConrol
+// type DefaultAllUserControlMessage struct {
+// 	Id     string `json:"id"`
+// 	Status bool   `json:"status"`
+// 	Type   int    `json:"status"`
+// }
+
 
 type Chat struct {
 	TargetId string        `json:"targetId"`
@@ -73,28 +87,32 @@ func createNewClient(userId *string) *mqtt.ClientOptions {
 
 func main() {
 	userId := flag.String("id", "-1", "user id")
-	createPersistentMessage := flag.Bool("s", false, "Iniciar aplicação")
+	// createPersistentMessage := flag.Bool("s", false, "Iniciar aplicação")
 	flag.Parse()
 
 	opts := createNewClient(userId)
 
 	client := mqtt.NewClient(opts)
+
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	if *createPersistentMessage {
-		sendCurrentUsersListToControl(client)
-		fmt.Println("Configurações iniciadas com sucesso")
-		client.Disconnect(250)
-		os.Exit(0)
-	}
+	// sendCurrentUsersListToControl(client)
+
+	// if *createPersistentMessage {
+	// 	fmt.Println("Configurações iniciadas com sucesso")
+	// 	client.Disconnect(250)
+	// 	os.Exit(0)
+	// }
 
 	// register user on vector. if it already exists change it status to online
 
+	sendCurrentUsersListToControl(client, userId)
+
 	userControlSub(client, userId)
 
-	controlTopicSub(client, *userId)
+	controlUserTopicSub(client, *userId)
 
 	go func() {
 		for {
@@ -102,9 +120,6 @@ func main() {
 			fmt.Printf("%+v\n", usersList)
 		}
 	}()
-
-	for {
-	}
 
 	// use it to break
 	// client.Disconnect(250)
@@ -212,7 +227,7 @@ func createTopicString(name string) string {
 	return "topic/" + name
 }
 
-func controlTopicSub(client mqtt.Client, userId string) {
+func controlUserTopicSub(client mqtt.Client, userId string) {
 	firstSharedUsers := true
 
 	var messagePubHandlerControl mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -253,21 +268,25 @@ func controlTopicSub(client mqtt.Client, userId string) {
 		}
 	}
 
-	// Descobrir pra que serve o 1
-	token := client.Subscribe(CONTROL_TOPIC, 0, messagePubHandlerControl)
+	token := client.Subscribe(CONTROL_TOPIC, QOS_NOT_PERSISTENT, messagePubHandlerControl)
 	token.Wait()
 	fmt.Printf("Subscribed to topic: %s", CONTROL_TOPIC)
 }
 
-func sendCurrentUsersListToControl(client mqtt.Client) {
-	allUSers := &ControlMessage{
-		Type:  CONTROL_MESSAGE_SHARE_USERS,
-		Users: usersList,
-	}
+func sendCurrentUsersListToControl(client mqtt.Client, userId *string) {
+	// When QOS1+ subscriptions have been created previously and you connect with CleanSession set to false it is possible that the broker will deliver retained messages before Subscribe can be called. To process these messages either configure a handler with AddRoute or set a DefaultPublishHandler.
+	payload := stringify(&DefaultAllUserControlMessage{
+		Id:    *userId,
+		Type:  ,
 
-	fmt.Println(stringify(allUSers))
+	})
 
-	client.Publish(CONTROL_TOPIC, 1, true, stringify(allUSers))
+	client.Publish(
+		CONTROL_TOPIC,
+		QOS_NOT_PERSISTENT,
+		MESSAGE_NOT_PERSISTENT,
+		stringify(payload),
+	);
 }
 
 func controlTopicPub(client mqtt.Client, message *ControlMessage, retain bool) {
@@ -316,6 +335,6 @@ func userControlSub(client mqtt.Client, user *string) {
 
 	topic := createControlTopicString(*user)
 
-	token := client.Subscribe(topic, 1, userPubHandlerControl)
+	token := client.Subscribe(topic, QOS_PERSISTENT_1, userPubHandlerControl)
 	token.Wait()
 }
